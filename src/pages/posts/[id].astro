@@ -1,0 +1,94 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostCard from '../../components/PostCard.astro';
+import Sidebar from '../../components/Sidebar.astro';
+import { getPosts, processContent, formatDate, imageUrl, plainText, type Post } from '../../lib/microcms';
+import { SITE } from '../../config';
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post) => ({ params: { id: post.id }, props: { post } }));
+}
+const { post } = Astro.props as { post: Post };
+const { html, toc } = processContent(post.content);
+type TocItem = (typeof toc)[number];
+const tocGroups: (TocItem & { children: TocItem[] })[] = [];
+for (const h of toc) {
+  if (h.level === 2 || tocGroups.length === 0) tocGroups.push({ ...h, children: [] });
+  else tocGroups[tocGroups.length - 1].children.push(h);
+}
+const description = post.description || plainText(post.content);
+const url = new URL(Astro.url.pathname, Astro.site).href;
+const img = imageUrl(post.eyecatch, 1200);
+const modified = post.revisedAt ?? post.updatedAt;
+const showUpdated = formatDate(modified) !== formatDate(post.publishedAt);
+const related = (await getPosts()).filter((p) => p.id !== post.id && p.category?.id === post.category?.id).slice(0, 3);
+const crumbs = [
+  { name: 'ホーム', url: new URL('/', Astro.site).href },
+  ...(post.category ? [{ name: post.category.name, url: new URL(`/category/${post.category.id}/`, Astro.site).href }] : []),
+  { name: post.title, url },
+];
+const jsonLd = [
+  {
+    '@context': 'https://schema.org', '@type': 'BlogPosting', headline: post.title, description,
+    datePublished: post.publishedAt, dateModified: modified, mainEntityOfPage: url,
+    ...(img ? { image: [img] } : {}),
+    author: { '@type': 'Person', name: SITE.author, url: new URL('/about/', Astro.site).href },
+    publisher: { '@type': 'Organization', name: SITE.name },
+  },
+  {
+    '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+    itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: c.url })),
+  },
+];
+const shareText = encodeURIComponent(`${post.title} | ${SITE.name}`);
+---
+<Base title={post.title} description={description} image={img} type="article" jsonLd={jsonLd}>
+  <div class="container layout">
+    <div>
+      <article class="article">
+        <nav class="breadcrumb" aria-label="パンくずリスト">
+          <ol>{crumbs.slice(0, -1).map((c) => <li><a href={c.url}>{c.name}</a></li>)}</ol>
+        </nav>
+        <div class="meta">
+          {post.category && <a class="badge" href={`/category/${post.category.id}/`}>{post.category.name}</a>}
+          <span>公開日 <time datetime={post.publishedAt}>{formatDate(post.publishedAt)}</time></span>
+          {showUpdated && <span>最終更新 <time datetime={modified}>{formatDate(modified)}</time></span>}
+        </div>
+        <h1>{post.title}</h1>
+        {post.isPr && (
+          <p class="notice pr">【PR】本記事には広告・アフィリエイトリンクが含まれます。リンク経由で商品・サービスに申し込みがあった場合、当サイトが報酬を受け取ることがあります。詳しくは<a href="/ad-policy/">広告掲載について</a>をご覧ください。</p>
+        )}
+        {img && <img class="eyecatch" src={img} alt="" width="1200" height="630" />}
+        {toc.length >= 2 && (
+          <nav class="toc" aria-label="目次">
+            <p>目次</p>
+            <ol>{tocGroups.map((g) => (
+              <li><a href={`#${g.id}`}>{g.text}</a>
+                {g.children.length > 0 && <ul>{g.children.map((c) => <li><a href={`#${c.id}`}>{c.text}</a></li>)}</ul>}
+              </li>
+            ))}</ol>
+          </nav>
+        )}
+        <div class="prose" set:html={html} />
+        <p class="notice risk">
+          本記事は情報提供を目的としており、特定の金融商品の売買を推奨するものではありません。記載内容は公開・更新時点の情報に基づいており、制度や商品内容は変更される場合があります。投資にはリスクがあり、元本を割り込む可能性があります。最終的な判断はご自身でお願いします（<a href="/disclaimer/">免責事項</a>）。
+        </p>
+        {post.tags && post.tags.length > 0 && (
+          <div class="tag-cloud">{post.tags.map((t) => <a href={`/tag/${t.id}/`}>#{t.name}</a>)}</div>
+        )}
+        <div class="share">
+          <a href={`https://x.com/intent/post?text=${shareText}&url=${encodeURIComponent(url)}`} target="_blank" rel="noopener">Xでシェア</a>
+          <a href={`https://b.hatena.ne.jp/entry/${url.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener">はてブ</a>
+          <a href={`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`} target="_blank" rel="noopener">LINE</a>
+        </div>
+      </article>
+      {related.length > 0 && (
+        <section class="related">
+          <h2 class="section-title">関連記事</h2>
+          <div class="cards">{related.map((p) => <PostCard post={p} headingLevel="h3" />)}</div>
+        </section>
+      )}
+    </div>
+    <Sidebar />
+  </div>
+</Base>
