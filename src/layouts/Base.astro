@@ -1,0 +1,71 @@
+---
+import '../styles/global.css';
+import { SITE, NAV, FOOTER_LINKS } from '../config';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'article';
+  jsonLd?: object | object[];
+  noindex?: boolean;
+}
+const { title, description = SITE.description, image, type = 'website', jsonLd, noindex } = Astro.props;
+const fullTitle = title ? `${title} | ${SITE.name}` : `${SITE.name} | ${SITE.tagline}`;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImage = image ?? new URL('/og-default.png', Astro.site).href;
+const path = Astro.url.pathname;
+const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+---
+<!doctype html>
+<html lang={SITE.lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" type="application/rss+xml" title={SITE.name} href="/rss.xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content={SITE.locale} />
+    <meta name="twitter:card" content="summary_large_image" />
+    {SITE.twitter && <meta name="twitter:site" content={SITE.twitter} />}
+    {ld.map((o) => <script type="application/ld+json" set:html={JSON.stringify(o)} />)}
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container inner">
+        <a class="logo" href="/"><span class="logo-mark" aria-hidden="true">↗</span>{SITE.name}</a>
+        <nav class="gnav" aria-label="グローバルナビゲーション">
+          <ul>
+            {NAV.map((n) => (
+              <li><a href={n.href} aria-current={(n.href === '/' ? path === '/' : path.startsWith(n.href)) ? 'page' : undefined}>{n.label}</a></li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="container">
+        <ul>
+          {FOOTER_LINKS.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        </ul>
+        <p class="disclaimer">
+          当サイトの情報は投資判断の参考となる情報提供を目的としたもので、特定の金融商品の売買を推奨・勧誘するものではありません。投資に関する最終決定はご自身の判断と責任で行ってください。
+        </p>
+        <small>© {new Date().getFullYear()} {SITE.name}</small>
+      </div>
+    </footer>
+  </body>
+</html>
