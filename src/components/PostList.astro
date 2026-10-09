@@ -1,0 +1,16 @@
+---
+import type { Post } from '../lib/microcms';
+import PostCard from './PostCard.astro';
+import Sidebar from './Sidebar.astro';
+import Pagination from './Pagination.astro';
+interface Props { heading: string; posts: Post[]; page?: { prev?: string; next?: string; current: number; last: number } }
+const { heading, posts, page } = Astro.props;
+---
+<div class="container layout">
+  <section>
+    <h2 class="section-title">{heading}</h2>
+    {posts.length ? <div class="cards">{posts.map((p) => <PostCard post={p} />)}</div> : <p>記事はまだありません。</p>}
+    {page && <Pagination {...page} />}
+  </section>
+  <Sidebar />
+</div>

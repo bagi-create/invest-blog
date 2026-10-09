@@ -1,0 +1,23 @@
+---
+import type { Post } from '../lib/microcms';
+import { formatDate, imageUrl } from '../lib/microcms';
+interface Props { post: Post; headingLevel?: 'h2' | 'h3' }
+const { post, headingLevel = 'h2' } = Astro.props;
+const H = headingLevel;
+const href = `/posts/${post.id}/`;
+const img = imageUrl(post.eyecatch, 640);
+---
+<article class="card">
+  <a class="cover" href={href} tabindex="-1" aria-hidden="true">
+    {img ? <img src={img} alt="" loading="lazy" decoding="async" width="640" height="336" /> : <span class="ph">{post.category?.name ?? 'Article'}</span>}
+  </a>
+  <div class="body">
+    <div class="meta">
+      {post.category && <a class="badge" href={`/category/${post.category.id}/`}>{post.category.name}</a>}
+      {post.isPr && <span class="badge pr">PR</span>}
+      <time datetime={post.publishedAt}>{formatDate(post.publishedAt)}</time>
+    </div>
+    <H><a href={href}>{post.title}</a></H>
+    {post.description && <p>{post.description}</p>}
+  </div>
+</article>

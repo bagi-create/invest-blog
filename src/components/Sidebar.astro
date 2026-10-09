@@ -1,0 +1,24 @@
+---
+import { getPosts, getCategories, getTags } from '../lib/microcms';
+const [posts, cats, tags] = await Promise.all([getPosts(), getCategories(), getTags()]);
+const count = (id: string) => posts.filter((p) => p.category?.id === id).length;
+const usedTags = tags.filter((t) => posts.some((p) => p.tags?.some((x) => x.id === t.id)));
+---
+<aside class="sidebar">
+  <section class="widget">
+    <h2>カテゴリー</h2>
+    <ul>
+      {cats.map((c) => <li><a href={`/category/${c.id}/`}><span>{c.name}</span><span>{count(c.id)}</span></a></li>)}
+    </ul>
+  </section>
+  {usedTags.length > 0 && (
+    <section class="widget">
+      <h2>タグ</h2>
+      <div class="tag-cloud">{usedTags.map((t) => <a href={`/tag/${t.id}/`}>#{t.name}</a>)}</div>
+    </section>
+  )}
+  <section class="widget">
+    <h2>新着記事</h2>
+    <ul>{posts.slice(0, 5).map((p) => <li><a href={`/posts/${p.id}/`}>{p.title}</a></li>)}</ul>
+  </section>
+</aside>
