@@ -1,0 +1,19 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostList from '../../components/PostList.astro';
+import { getPosts } from '../../lib/microcms';
+import { SITE } from '../../config';
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  const last = Math.ceil(posts.length / SITE.postsPerPage);
+  return Array.from({ length: Math.max(0, last - 1) }, (_, i) => ({ params: { n: String(i + 2) } }));
+}
+const n = Number(Astro.params.n);
+const posts = await getPosts();
+const last = Math.ceil(posts.length / SITE.postsPerPage);
+const slice = posts.slice((n - 1) * SITE.postsPerPage, n * SITE.postsPerPage);
+---
+<Base title={`記事一覧（${n}ページ目）`}>
+  <PostList heading={`記事一覧（${n}ページ目）`} posts={slice}
+    page={{ current: n, last, prev: n === 2 ? '/' : `/page/${n - 1}/`, next: n < last ? `/page/${n + 1}/` : undefined }} />
+</Base>
