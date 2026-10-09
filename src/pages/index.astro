@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+import PostList from '../components/PostList.astro';
+import { getPosts } from '../lib/microcms';
+import { SITE } from '../config';
+const posts = await getPosts();
+const last = Math.max(1, Math.ceil(posts.length / SITE.postsPerPage));
+const jsonLd = { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE.name, url: Astro.site?.href, description: SITE.description };
+---
+<Base jsonLd={jsonLd}>
+  <section class="hero container">
+    <h1>{SITE.tagline}</h1>
+    <p>{SITE.description}</p>
+  </section>
+  <PostList heading="新着記事" posts={posts.slice(0, SITE.postsPerPage)} page={{ current: 1, last, next: last > 1 ? '/page/2/' : undefined }} />
+</Base>
