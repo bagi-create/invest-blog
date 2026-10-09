@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Worker名（Cloudflareダッシュボードで作成する名前と一致させる）
+  "name": "invest-blog",
+  "compatibility_date": "2026-10-01",
+  // 静的アセットのみのWorker（スクリプト実行なし＝リクエスト課金対象外で無料・無制限）
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}
