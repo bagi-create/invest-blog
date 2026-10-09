@@ -1,0 +1,23 @@
+---
+import type { GetStaticPaths, Page } from 'astro';
+import Base from '../../../layouts/Base.astro';
+import PostList from '../../../components/PostList.astro';
+import { getPosts, getCategories, type Post, type Category } from '../../../lib/microcms';
+import { SITE } from '../../../config';
+export const getStaticPaths = (async ({ paginate }) => {
+  const [posts, cats] = await Promise.all([getPosts(), getCategories()]);
+  return cats.flatMap((cat) =>
+    paginate(posts.filter((p) => p.category?.id === cat.id), { params: { id: cat.id }, props: { cat }, pageSize: SITE.postsPerPage }),
+  );
+}) satisfies GetStaticPaths;
+const { page, cat } = Astro.props as { page: Page<Post>; cat: Category };
+const suffix = page.currentPage > 1 ? `（${page.currentPage}ページ目）` : '';
+---
+<Base title={`${cat.name}の記事一覧${suffix}`} description={cat.description ?? `${cat.name}に関する記事の一覧です。`}>
+  <section class="hero container">
+    <h1>{cat.name}</h1>
+    {cat.description && <p>{cat.description}</p>}
+  </section>
+  <PostList heading={`${cat.name}の記事${suffix}`} posts={page.data}
+    page={{ current: page.currentPage, last: page.lastPage, prev: page.url.prev, next: page.url.next }} />
+</Base>
