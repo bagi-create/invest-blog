@@ -1,0 +1,15 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PostList from '../../../components/PostList.astro';
+import { getPosts, getTags, type Tag } from '../../../lib/microcms';
+export async function getStaticPaths() {
+  const [posts, tags] = await Promise.all([getPosts(), getTags()]);
+  return tags.filter((t) => posts.some((p) => p.tags?.some((x) => x.id === t.id))).map((tag) => ({ params: { id: tag.id }, props: { tag } }));
+}
+const { tag } = Astro.props as { tag: Tag };
+const posts = (await getPosts()).filter((p) => p.tags?.some((x) => x.id === tag.id));
+---
+<Base title={`#${tag.name} の記事`} noindex>
+  <section class="hero container"><h1>#{tag.name}</h1></section>
+  <PostList heading={`#${tag.name} の記事`} posts={posts} />
+</Base>
